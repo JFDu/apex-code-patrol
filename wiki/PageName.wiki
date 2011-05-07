@@ -1,0 +1,62 @@
+=What is it?=
+Apex Code Patrol is class allowing you to control the execution of your classes, triggers, groups or even single methods, by setting execution limits or simply disabling the code on the fly.
+
+=How to use this=
+__for some detail examples check out the test methods__
+
+==Disable Code ==
+{{{
+public class APCSampleClass {
+
+
+public boolean updateAccounts()
+{
+
+// maybe some other code performed dml on setup objects and disabled // any other dml via patrol
+if(ApexCodePatrol.isDisabled('nonSetupDML'){return false;}
+
+// disable the update trigger 
+ApexCodePatrol.disable('APCSampleTrigger.update1');
+
+// perform the first update
+update accounts;
+
+
+// continue modifiy accounts
+
+
+// enable the update trigger, before the next update
+ApexCodePatrol.enable('APCSampleTrigger.update1');
+
+// update the accounts a second time
+// trigger will be executed (see below)
+update accounts;
+
+
+}
+}
+}}}
+
+
+==Trigger StandAlone==
+{{{
+
+trigger APCSampleTrigger on Account (after insert, after update) {
+
+/* 
+if not disabled (see above), trigger is executed only once
+*/
+if(trigger.isUpdate && ApexCodePatrol.execute('APCSampleTrigger.update1')){
+// YOUR CODE HERE
+}
+
+
+/* 
+trigger is executed twice
+*/
+if(ApexCodePatrol.execute('DataQualityGroup',2)){
+// YOUR CODE HERE
+}
+
+}
+}}}
