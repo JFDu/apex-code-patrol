@@ -1,23 +1,53 @@
 /**
- * Class to manage code execution
- * controll the execution of entire classes, triggers or groups of them, code sections and methods
+ * Copyright (c) 2011, Sebastian Wagner <sbw*DOT*dev[at]gmail_com>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ *   are permitted provided that the following conditions are met:
+ *
+ * - Redistributions of source code must retain the above copyright notice,
+ *      this list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ *      this list of conditions and the following disclaimer in the documentation
+ *      and/or other materials provided with the distribution.
+ * - Neither the name of the FinancialForce.com, inc nor the names of its contributors
+ *      may be used to endorse or promote products derived from this software without
+ *      specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ *  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
+ *  THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ *  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ *  OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**/
+/**
+ * ApexCodePatrol
+ * allows you to control the execution of your classes, triggers, groups or even single methods,
+ * by setting execution limits or simply disabling the code on the fly.
  */
 public class ApexCodePatrol {
 	
 	static Map<String,Ponch> officers;
 	
 	/**
-	 * CONTROLLING THE EXECUTION
+	 * CONTROLLING EXECUTION
 	 */
-
+	 
 	/**
-	 * see execute(String,Integer) 
+	 * Register code and the max. executions
 	 */
-	public static Boolean execute(String key)
+	public static void register(String key, Integer numberOfExecutions)
 	{
-		return execute(key,1);
+		getOfficer(key,numberOfExecutions);
 	}
 
+	/**
+	 * Returns true if you can execute your code and increments the execution counter
+	 * to simple eval if you can execute a certain code use canExecute() method
+	 */
 	public static Boolean execute(String key, Integer maxExecutions)
 	{
 		Ponch off = getOfficer(key,maxExecutions);
@@ -29,7 +59,18 @@ public class ApexCodePatrol {
 		return getOfficer(key,maxExecutions).execute();
 	}
 
+	/**
+	 * sames as above, about defaults to 1 execution 
+	 */
+	public static Boolean execute(String key)
+	{
+		return execute(key,1);
+	}
 
+	/** 
+	 * Use when you need parts of your code to behave different when executed in a test
+	 * in general you should use system.isRunningTest()
+	 */
 	public static void startTest(String key){
 		getOfficer(key,0).setIsTest(true);
 	}
@@ -57,7 +98,6 @@ public class ApexCodePatrol {
 	/**
 	 * COUNTER AND LIMITS
 	 */
-
 	/** 
 	 * Return the Number of Executions of a code
 	 */
@@ -81,7 +121,6 @@ public class ApexCodePatrol {
 	}
 
 
-	
 	/**
 	 * FLAGS
 	 */
@@ -115,10 +154,8 @@ public class ApexCodePatrol {
 	}
 
 
-
-	
 	/**
-	 * INNER UTILS
+	 * HELPER UTILS
 	 */
 	private static Map<String,Ponch> getOfficers()
 	{
@@ -149,7 +186,7 @@ public class ApexCodePatrol {
 	 * THE OFFICER
 	 *
 	 * Every code controlled by the ApexCodePatrol has its personal Erik
-	 * who know's their names and ensures that they execute within their limits. 
+	 * who know's their names and ensures that they stay within their limits. 
 	 */
 	public class Ponch {
 		
@@ -228,13 +265,15 @@ public class ApexCodePatrol {
 		
 		/**
 		 * Evals if the code can be executed
-		 * @param lookTheOtherWay Boolean false to not increment the counter
 		 */
 		public Boolean canExecute()
 		{
 			return (exeLimit > exeCounter || exeLimit == 0 && inTestMode) && !disabled;
 		}
-				 
+		
+		/** 
+	   	 * Returns true if the code can be executed and increments the counter
+	   	 */
 		public Boolean execute()
 		{
 			if(!canExecute())
@@ -244,9 +283,10 @@ public class ApexCodePatrol {
 		}
 		
 	}
-	
-	
-	
+
+	/**
+	 * TESTS
+	 */
 	private static testMethod void testCore()
 	{
 		// imaginary code names
@@ -279,10 +319,12 @@ public class ApexCodePatrol {
 		system.assertEquals(false, ApexCodePatrol.canExecute(cls1));
 		system.assertEquals(ApexCodePatrol.getCounter(cls1),ApexCodePatrol.getLimit(cls1));
 		
-		// to build the hierarchy execute the build method 10 times 
+		// to build the hierarchy, buildMethod needs to be executed 10, times
+		// in order to reach 100% test coverage use register instead of inline defintion
+		ApexCodePatrol.register(mtd1, 10);		
 		for(integer i = 0; i<10;i++)
 		{
-			system.assertEquals(true, ApexCodePatrol.execute(mtd1, 10));
+			system.assertEquals(true, ApexCodePatrol.execute(mtd1));
 		}
 		system.assertEquals(false, ApexCodePatrol.canExecute(mtd1));
 		// reset the limit for the method to 1
