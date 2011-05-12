@@ -10,7 +10,7 @@
  * - Redistributions in binary form must reproduce the above copyright notice,
  *      this list of conditions and the following disclaimer in the documentation
  *      and/or other materials provided with the distribution.
- * - Neither the name of the copyright holder nor the names of its contributors
+ * - Neither the name of the FinancialForce.com, inc nor the names of its contributors
  *      may be used to endorse or promote products derived from this software without
  *      specific prior written permission.
  *
@@ -26,21 +26,60 @@
 /**
  * ApexCodePatrol
  * allows you to control the execution of your classes, triggers, groups or even single methods,
- * by setting execution limits or simply disabling the code on the fly.
+ * by setting execution limits or simply disabling the code on the fly. Additionally 
  */
-public class ApexCodePatrol {
-	
-	static Map<String,Ponch> officers;
-	
-	/**
-	 * CONTROLLING EXECUTION
-	 */
-	 
+global class ApexCodePatrol {
+
+    static Map<String,Ponch> officers;
+
+    /**
+     *============================================================
+     * GLOBAL FLAGS / CONTEXT
+     *
+     * eval Pages, Triggers and Tests
+     *============================================================
+     */
+    /**
+     * VISUALFORCE CONTEXT
+     */
+    global static Boolean isPage(){
+    	return ApexPages.currentPage() != null;
+    }
+    /**
+     * TRIGGER CONTEXT
+     */
+    global static Boolean isTrigger(){
+    	return Trigger.isExecuting;
+    }
+    /**
+     * TEST CONTEXT
+     */
+    global static Boolean isTest(){
+    	return Test.isRunningTest();
+    }
+    /**
+     * True if we haven't reached the futures limit
+     */
+    global static Boolean allowFutureCall(){
+    	return remainingFutureCalls() > 0;
+    }
+    /**
+     * Diff. between LimitFutureCalls and acutall number of calls made
+     */
+    global static Integer remainingFutureCalls(){
+    	return Limits.getLimitFutureCalls() - Limits.getFutureCalls();
+    }
+
+    /**
+     *============================================================
+     * EXECUTION CONTROL
+     *============================================================
+     */
+
 	/**
 	 * Register code and the max. executions
 	 */
-	public static void register(String key, Integer numberOfExecutions)
-	{
+	global static void register(String key, Integer numberOfExecutions){
 		getOfficer(key,numberOfExecutions);
 	}
 
@@ -48,11 +87,10 @@ public class ApexCodePatrol {
 	 * Returns true if you can execute your code and increments the execution counter
 	 * to simple eval if you can execute a certain code use canExecute() method
 	 */
-	public static Boolean execute(String key, Integer maxExecutions)
-	{
+	global static Boolean execute(String key, Integer maxExecutions){
 		Ponch off = getOfficer(key,maxExecutions);
 		// reset the limit's when executed in testMode for the first time
-		if(off.isTest() && off.getCounter() == 0)
+		if(off.isTestMode() && off.getCounter() == 0)
 		{
 			off.resetLimits(maxExecutions);
 		}
@@ -62,101 +100,111 @@ public class ApexCodePatrol {
 	/**
 	 * sames as above, about defaults to 1 execution 
 	 */
-	public static Boolean execute(String key)
-	{
+	global static Boolean execute(String key){
 		return execute(key,1);
 	}
 
 	/** 
-	 * Use when you need parts of your code to behave different when executed in a test
-	 * in general you should use system.isRunningTest()
+	 * Start and stop tests for parts of your code, to evaluate testMode use isTest(String)
+	 * for a sample see inlcuded unitTests
+	 * In general you should use system.isRunnintTest() or isTest()
 	 */
-	public static void startTest(String key){
-		getOfficer(key,0).setIsTest(true);
+	global static void startTest(String key){
+		getOfficer(key,0).setTestMode(true);
 	}
 
-	public static void stopTest(String key){
-		getOfficer(key,0).setIsTest(false);
+	global static void stopTest(String key){
+		getOfficer(key,0).setTestMode(false);
 	}
 
 	/**
 	 * Disable code for execution
 	 */
-	public static void disable(String key)
-	{
+	global static void disable(String key){
 		getOfficer(key).setDisabled(true);
 	}
 
 	/**
 	 * Enable code for execution
 	 */
-	public static void enable(String key)
-	{
+	global static void enable(String key){
 		getOfficer(key).setDisabled(false);
 	}
 
-	/**
-	 * COUNTER AND LIMITS
-	 */
+    /**
+     *============================================================
+     * COUNTER AND LIMITS
+     *============================================================
+     */
 	/** 
 	 * Return the Number of Executions of a code
 	 */
-	public static Integer getCounter(String key){
+	global static Integer getCounter(String key){
 		return getOfficer(key).getCounter();
 	}
 
 	/** 
 	 * Returns the Execution Limit of a code
 	 */
-	public static Integer getLimit(String key){
+	global static Integer getLimit(String key){
 		return getOfficer(key).getLimit();
 	}
 
 	/**
 	 * Sets the counter for code matching the key param to 0 and overwrites the limits
 	 */
-	public static void resetLimits(String key, Integer maxExecutions)
-	{
+	global static void resetLimits(String key, Integer maxExecutions){
 		getOfficer(key).resetLimits(maxExecutions);
 	}
 
 
-	/**
-	 * FLAGS
-	 */
+    /**
+     *============================================================
+     * CONCRETE FLAGS
+     *============================================================
+     */
 	/**
 	 * Evals if a code can be executed
 	 */
-	public static Boolean canExecute(String key)
-	{
+	global static Boolean canExecute(String key){
 		return getOfficer(key).canExecute();
+	}
+	/**
+	 * Evals if execution is blocked by any code which key is contained in keys set param
+	 */
+	global static Boolean canExecute(Set<String> keys){
+		
+		for(String key : keys){
+			if(isRegistered(key) && !canExecute(key))
+			 return false;
+		}
+		return true;
 	}
 	/**
 	 * True if code has been disabled
 	 */
-	public static Boolean isDisabled(String key)
-	{
+	global static Boolean isDisabled(String key){
 		return getOfficer(key).isDisabled();
 	}
 	/**
-	 * Evals if the code is executed in test mode
+	 * True if startTest(String) has been called, to evaluate if 
 	 */
-	public static Boolean isTest(String key)
-	{
-		return getOfficer(key).isTest();
+	global static Boolean isTest(String key){
+		return getOfficer(key).isTestMode();
 	}
 	/**
 	 * Evals if there's an officer keep track of the code
 	 */
-	public static Boolean isRegistered(String key)
-	{
+	global static Boolean isRegistered(String key){
 		return getOfficers().containsKey(key);
 	}
 
 
-	/**
-	 * HELPER UTILS
-	 */
+    /**
+     *============================================================
+     * HELPER UTILS
+     *============================================================
+     */
 	private static Map<String,Ponch> getOfficers()
 	{
 		if(officers == null)
@@ -213,12 +261,12 @@ public class ApexCodePatrol {
 		/**
 		 * set the inTestMode flag
 		 */
-		public void setIsTest(Boolean testMode)
+		public void setTestMode(Boolean testMode)
 		{
 			inTestMode = testMode;
 		}
 		
-		public Boolean isTest(){
+		public Boolean isTestMode(){
 			return inTestMode;
 		}
 		
@@ -270,7 +318,7 @@ public class ApexCodePatrol {
 		{
 			return (exeLimit > exeCounter || exeLimit == 0 && inTestMode) && !disabled;
 		}
-		
+
 		/** 
 	   	 * Returns true if the code can be executed and increments the counter
 	   	 */
@@ -281,7 +329,6 @@ public class ApexCodePatrol {
 			exeCounter++;
 			return true;
 		}
-		
 	}
 
 	/**
@@ -290,11 +337,21 @@ public class ApexCodePatrol {
 	private static testMethod void testCore()
 	{
 		// imaginary code names
-		string cls1 = 'AccountHierarchyBuilder';
-		string mtd1 = 'AccountHierarchyUtil.build';
-		string trg1 = 'AccountTriggerBefore';	// trigger invoiced before 
+		string cls1 = 'AccountHierarchy';
+		string mtd1 = 'AccountHierarchy.build()';
+		string trg1 = 'AccountTriggerBefore'; 
+
+		// GLOBAL FLAGS
+
+        // system.assertEquals(false,ApexCodePatrol.isPage()); --> fails
+        // isPage() not necessarily false, even when running the test in IDE it evals to true 
+        // verfied that it worked via trigger and api
+        // system.debug(ApexPages.currentPage()) prints out==> System.PageReference[null]; 
+        system.assertEquals(ApexPages.currentPage() != null,ApexCodePatrol.isPage());
+        system.assertEquals(false,ApexCodePatrol.isTrigger());
+        system.assertEquals(true,ApexCodePatrol.isTest());
 		
-		// start the test
+		// ACP Tests
 		ApexCodePatrol.startTest(cls1);
 		system.assertEquals(true, ApexCodePatrol.isTest(cls1));
 		system.assertEquals(true, ApexCodePatrol.isRegistered(cls1));
@@ -302,11 +359,14 @@ public class ApexCodePatrol {
 		// since it hasn't been executed the class should be executable able at least once
 		system.assertEquals(true, ApexCodePatrol.canExecute(cls1));
 
-		// DISABLE TRIGGER
-		// before executing the class, disable the account trigger, because multipe updates might
-		// be peformed
-		ApexCodePatrol.disable(trg1);
+        // same goes for sets
+        system.assertEquals(true, ApexCodePatrol.canExecute(new Set<String>{cls1,'no_block'}));
 
+		// DISABLE TRIGGER
+		// before executing the class, disable the account trigger,in order to perform a dml operation
+		// that causes a recrusive trigger
+		ApexCodePatrol.disable(trg1);
+        system.assertNotEquals(true, ApexCodePatrol.canExecute(new Set<String>{trg1,'no_block'}));
 		system.assertEquals(false, ApexCodePatrol.execute(trg1));
 		system.assertEquals(true, ApexCodePatrol.isDisabled(trg1));
 		system.assertEquals(0, ApexCodePatrol.getCounter(trg1));
