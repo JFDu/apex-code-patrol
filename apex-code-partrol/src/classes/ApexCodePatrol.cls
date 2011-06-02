@@ -1,5 +1,5 @@
 /*============================================================
- * Apex Code Patrol 2011
+ * Apex Code Patrol, 2011
  *
  * http://code.google.com/p/apex-code-patrol/
  *
@@ -13,35 +13,33 @@
  */
 global class ApexCodePatrol {
 	
-	
-	static Map<String,Ponch> officers;
+    
+    static Map<String,Ponch> officers;
 	
     /**
      *============================================================
      * GLOBAL FLAGS / CONTEXT
      *
-     * eval Pages, Triggers and Tests
+     * eval Pages, Triggers, Tests and Async
      *============================================================
      */
 
-    /**
-     * VISUALFORCE CONTEXT
-     */
+     // VISUALFORCE CONTEXT
     global static Boolean isPage(){
     	return ApexPages.currentPage() != null;
     }
-    /**
-     * TRIGGER CONTEXT
-     */
+
+     // TRIGGER CONTEXT
     global static Boolean isTrigger(){
     	return Trigger.isExecuting;
     }
-    /**
-     * TEST CONTEXT
-     */
+
+     // TEST CONTEXT
     global static Boolean isTest(){
     	return Test.isRunningTest();
     }
+
+     // ASYNC CONTEXT
     /**
      * True if we haven't reached the futures limit
      */
@@ -69,8 +67,8 @@ global class ApexCodePatrol {
     }
 
     /**
-     * Returns true if you can execute your code and increments the execution counter
-     * to simple eval if you can execute a certain code use canExecute() method
+     * Returns true if you can execute your code and increments the execution counter.
+     * To simplly eval if you can execute a certain code use canExecute() method instead
      */
     global static Boolean execute(String key, Integer maxExecutions){
         Ponch off = getOfficer(key,maxExecutions);
@@ -82,7 +80,7 @@ global class ApexCodePatrol {
     }
 
     /**
-     * sames as above, but defaults to 1 execution 
+     * sames as above, but sets number of executions 1 one 
      */
     global static Boolean execute(String key){
         return execute(key,1);
@@ -121,14 +119,14 @@ global class ApexCodePatrol {
      *============================================================
      */
     /** 
-     * Return the Number of Executions of a code
+     * Return the number of executions of a code
      */
     global static Integer getCounter(String key){
         return getOfficer(key).getCounter();
     }
 
     /** 
-     * Returns the Execution Limit of a code
+     * Returns the execution limit of a code
      */
     global static Integer getLimit(String key){
         return getOfficer(key).getLimit();
@@ -172,7 +170,7 @@ global class ApexCodePatrol {
     }
     
     /**
-     * True if startTest(String) has been called, to evaluate if 
+     * True if startTest(String) has been called
      */
     global static Boolean isTest(String key){
        return getOfficer(key).isTestMode();
@@ -216,8 +214,8 @@ global class ApexCodePatrol {
     /**
      * THE OFFICER
      *
-     * Every code controlled by the ApexCodePatrol has its personal Erik
-     * who know's their names and ensures that they stay within their limits. 
+     * Every code controlled by the ApexCodePatrol has its personal Erik,
+     * who knows their names and ensures that they stay within their limits. 
      */
     public class Ponch {
 
@@ -306,7 +304,10 @@ global class ApexCodePatrol {
     }
 
     /**
-     * TESTS
+     * INLINE TESTS
+     * 
+     * Included in class to make it easy to extend with functionallity. I suggest to export to dedicated test class 
+     * before deploying to production
      */
     private static testMethod void testCore(){
         // imaginary code names
