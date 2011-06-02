@@ -1,10 +1,9 @@
 /*============================================================
- * apex-base 2011
+ * Apex Code Patrol 2011
  *
- * http://code.google.com/p/apex-base/
+ * http://code.google.com/p/apex-code-patrol/
  *
- * Code is licensed under "New BSD License". A copy of the license is included in the
- * ab_AboutPage.page file, included in the release
+ * Code is licensed under "New BSD License".
  *============================================================
  */
 /**
@@ -83,7 +82,7 @@ global class ApexCodePatrol {
     }
 
     /**
-     * sames as above, about defaults to 1 execution 
+     * sames as above, but defaults to 1 execution 
      */
     global static Boolean execute(String key){
         return execute(key,1);
@@ -92,7 +91,7 @@ global class ApexCodePatrol {
     /** 
      * Start and stop tests for parts of your code, to evaluate testMode use isTest(String)
      * for a sample see inlcuded unitTests
-     * In general you should use system.isRunnintTest() or isTest()
+     * In general you should use system.isRunningTest() or isTest()
      */
     global static void startTest(String key){
         getOfficer(key,0).setTestMode(true);
